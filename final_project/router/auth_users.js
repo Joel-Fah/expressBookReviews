@@ -6,8 +6,8 @@ const regd_users = express.Router();
 let users = [];
 
 const isValid = (user)=>{ //returns boolean
-    let filtered_users = users.filter((user)=> user.username === user);
-    if(filtered_users){
+    let filtered_users = users.filter((registeredUser)=> registeredUser.username === user);
+    if(filtered_users.length > 0){
         return true;
     }
     return false;
@@ -15,7 +15,7 @@ const isValid = (user)=>{ //returns boolean
 const authenticatedUser = (username,password)=>{ //returns boolean
     if(isValid(username)){
         let filtered_users = users.filter((user)=> (user.username===username)&&(user.password===password));
-        if(filtered_users){
+        if(filtered_users.length > 0){
             return true;
         }
         return false;
@@ -34,10 +34,10 @@ regd_users.post("/register", (req,res) => {
         const present = users.filter((user)=> user.username === username)
         if(present.length===0){
             users.push({"username":req.body.username,"password":req.body.password});
-            return res.status(201).json({message:"USer Created successfully"})
+            return res.status(201).json({message:"User Created successfully"})
         }
         else{
-          return res.status(400).json({message:"Already exists"})
+          return res.status(400).json({message:"User already exists"})
         }
     }
     else if(!username && !password){
@@ -64,7 +64,8 @@ regd_users.post("/login", (req,res) => {
     req.session.authorization = {
         accessToken
     }
-    res.send("User logged in Successfully")
+    req.session.username = user;
+    res.status(200).json({message:"Login successful!"})
  
 });
 
@@ -74,6 +75,9 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
   let userd = req.session.username;
   let ISBN = req.params.isbn;
   let details = req.query.review;
+  if (!books[ISBN]) {
+    return res.status(404).json({message:"Book not found"});
+  }
   let rev = {user:userd,review:details}
   books[ISBN].reviews = rev;
   return res.status(201).json({message:"Review added successfully"})
@@ -82,8 +86,11 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
 
 regd_users.delete("/auth/review/:isbn", (req, res) => {
     let ISBN = req.params.isbn;
+    if (!books[ISBN]) {
+        return res.status(404).json({message:"Book not found"});
+    }
     books[ISBN].reviews = {}
-    return res.status(200).json({messsage:"Review has been deleted"})
+    return res.status(200).json({message:"Review deleted successfully"})
 });
 
 module.exports.authenticated = regd_users;

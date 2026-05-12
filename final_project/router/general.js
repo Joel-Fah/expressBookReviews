@@ -8,6 +8,11 @@ const public_users = express.Router();
 // Helper to convert books object to array if needed
 const getBooksArray = () => Object.values(books);
 
+const sendNotFound = (res, message, context = {}) => {
+    console.warn(message, context);
+    return res.status(404).json({ message });
+};
+
 public_users.post("/register", (req, res) => {
     const { username, password } = req.body;
 
@@ -31,6 +36,9 @@ public_users.get('/', (req, res) => {
 
     getBooks.then((booksList) => {
         res.json(booksList);
+    }).catch((err) => {
+        console.error("Unable to retrieve books", err);
+        res.status(500).json({ message: "Unable to retrieve books" });
     });
 });
 
@@ -54,7 +62,7 @@ public_users.get('/isbn/:isbn', (req, res) => {
 
     booksBasedOnIsbn(ISBN)
         .then((book) => res.json(book))
-        .catch((err) => res.status(404).json({ message: err }));
+        .catch((err) => sendNotFound(res, err, { isbn: ISBN }));
 });
 
 // Get book details based on author using Promises
@@ -77,7 +85,7 @@ public_users.get('/author/:author', (req, res) => {
 
     booksBasedOnAuthor(author)
         .then((books) => res.json(books))
-        .catch((err) => res.status(404).json({ message: err }));
+        .catch((err) => sendNotFound(res, err, { author }));
 });
 
 // Get all books based on title
@@ -99,7 +107,7 @@ public_users.get('/title/:title', (req, res) => {
 
     booksBasedOnTitle(title)
         .then((books) => res.json(books))
-        .catch((err) => res.status(404).json({ message: err }));
+        .catch((err) => sendNotFound(res, err, { title }));
 });
 
 // Get book review
@@ -109,7 +117,7 @@ public_users.get('/review/:isbn', (req, res) => {
     if (book) {
         res.json(book.reviews || {});
     } else {
-        res.status(404).json({ message: "Book not found" });
+        sendNotFound(res, "Book not found", { isbn });
     }
 });
 
